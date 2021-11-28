@@ -1,4 +1,6 @@
+use image::{save_buffer, ColorType, Rgb};
 use nokhwa::{Camera, FrameFormat};
+
 use std::error::Error;
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -22,7 +24,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     );
 
     camera.open_stream()?;
-    let frame = camera.frame()?;
+    let mut frame = camera.frame()?;
 
     let mut maximum_brightness = 0;
     let mut best_pos = None;
@@ -38,7 +40,27 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
     }
 
-    println!("Best pos: {}, {}", best_pos.unwrap().0, best_pos.unwrap().1);
+    let best_pos = best_pos.unwrap();
+    let best_x = best_pos.0;
+    let best_y = best_pos.1;
+
+    let red = Rgb([255, 0, 0]);
+
+    for y in best_y.saturating_sub(10)..best_y.saturating_add(10).min(frame.height() as usize) {
+        frame.put_pixel(best_x as u32, y as u32, red);
+    }
+
+    for x in best_x.saturating_sub(10)..best_x.saturating_add(10).min(frame.width() as usize) {
+        frame.put_pixel(x as u32, best_y as u32, red);
+    }
+
+    save_buffer(
+        "result.png",
+        &frame,
+        frame.width(),
+        frame.height(),
+        ColorType::Rgb8,
+    )?;
 
     Ok(())
 }
