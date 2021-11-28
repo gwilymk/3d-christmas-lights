@@ -4,6 +4,7 @@ use nokhwa::{Camera, FrameFormat};
 use imageproc::filter::gaussian_blur_f32;
 
 use std::error::Error;
+use std::fs::File;
 use std::io::{self, stdout, Write};
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -31,6 +32,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut buffer = String::new();
     let mut i = 0;
 
+    let mut output = File::create("target/output.dat")?;
+
     loop {
         io::stdin().read_line(&mut buffer)?;
 
@@ -40,8 +43,10 @@ fn main() -> Result<(), Box<dyn Error>> {
 
         print!("Taking for {}... ", i);
         stdout().flush()?;
-        take_image(&mut camera, i)?;
+        let pos = take_image(&mut camera, i)?;
         println!("Done");
+
+        writeln!(&mut output, "{} = {},{}", i, pos.0, pos.1)?;
 
         i += 1;
     }
