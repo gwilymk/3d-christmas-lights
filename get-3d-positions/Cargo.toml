@@ -1,0 +1,9 @@
+[package]
+name = "get-3d-positions"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+nokhwa = { version = "0.9.1", features = ["input-v4l"] }
