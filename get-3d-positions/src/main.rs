@@ -1,7 +1,10 @@
-use image::{save_buffer, ColorType, Rgb};
+use image::{save_buffer, ColorType, ImageBuffer, Rgb};
 use nokhwa::{Camera, FrameFormat};
 
+use imageproc::filter::gaussian_blur_f32;
+
 use std::error::Error;
+use std::io::{self, stdout, Write};
 
 fn main() -> Result<(), Box<dyn Error>> {
     let mut camera = Camera::new(0, None)?;
@@ -20,11 +23,34 @@ fn main() -> Result<(), Box<dyn Error>> {
         "{}x{}, {}",
         format.width(),
         format.height(),
-        format.format()
+        format.format(),
     );
 
     camera.open_stream()?;
-    let mut frame = camera.frame()?;
+
+    let mut buffer = String::new();
+    let mut i = 0;
+
+    loop {
+        io::stdin().read_line(&mut buffer)?;
+
+        if let Ok(different_index) = buffer.parse() {
+            i = different_index;
+        }
+
+        print!("Taking for {}... ", i);
+        stdout().flush()?;
+        take_image(&mut camera, i)?;
+        println!("Done");
+
+        i += 1;
+    }
+}
+
+fn take_image(camera: &mut Camera, index: i32) -> Result<(usize, usize), Box<dyn Error>> {
+    let frame = camera.frame()?;
+
+    let mut frame: ImageBuffer<Rgb<u8>, Vec<_>> = gaussian_blur_f32(&frame, 10.0);
 
     let mut maximum_brightness = 0;
     let mut best_pos = None;
@@ -55,12 +81,12 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     save_buffer(
-        "result.png",
+        format!("target/result-{:03}.png", index),
         &frame,
         frame.width(),
         frame.height(),
         ColorType::Rgb8,
     )?;
 
-    Ok(())
+    Ok(best_pos)
 }
