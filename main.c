@@ -96,13 +96,18 @@ int current_led = 0;
 
 // debounce control
 unsigned long time;
-const int delay_time = 50;
+const int delay_time = 250;
 
-void button_pressed(uint gpio, uint32_t events)
+uint8_t read_char()
 {
-    if ((to_ms_since_boot(get_absolute_time()) - time) > delay_time)
+    while (true)
     {
-        current_led = (current_led + 1) % NUM_PIXELS;
+        int32_t c = getchar_timeout_us(0);
+
+        if (c != PICO_ERROR_TIMEOUT)
+        {
+            return (uint8_t)c;
+        }
     }
 }
 
@@ -122,16 +127,18 @@ void one_at_a_time()
             }
         }
 
-        sleep_ms(10);
+        read_char();
+        printf("Button presed %i!\n", current_led);
+        current_led = (current_led + 1) % NUM_PIXELS;
     }
 }
 
 int main()
 {
-    time = to_ms_since_boot(get_absolute_time());
-
     //set_sys_clock_48();
     stdio_init_all();
+    time = to_ms_since_boot(get_absolute_time());
+
     gpio_init(BUTTON_PIN);
     gpio_pull_up(BUTTON_PIN);
 
@@ -150,7 +157,6 @@ int main()
         gpio_set_dir(PICO_DEFAULT_LED_PIN, GPIO_OUT);
         gpio_put(PICO_DEFAULT_LED_PIN, 1);
 
-        gpio_set_irq_enabled_with_callback(2, GPIO_IRQ_EDGE_FALL, true, &button_pressed);
         one_at_a_time();
     }
 

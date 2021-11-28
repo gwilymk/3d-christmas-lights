@@ -2,10 +2,12 @@ use image::{save_buffer, ColorType, ImageBuffer, Rgb};
 use nokhwa::{Camera, FrameFormat};
 
 use imageproc::filter::gaussian_blur_f32;
+use serialport::ClearBuffer;
 
 use std::error::Error;
 use std::fs::File;
 use std::io::{self, stdout, Write};
+use std::time::Duration;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let mut camera = Camera::new(0, None)?;
@@ -19,6 +21,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     camera.set_resolution(*best_format.0)?;
 
     let format = camera.camera_format();
+
+    let mut serial = serialport::new("/dev/ttyACM0", 115200)
+        .timeout(Duration::from_millis(20))
+        .open()?;
 
     println!(
         "{}x{}, {}",
@@ -35,6 +41,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut output = File::create("target/output.dat")?;
 
     loop {
+        print!("Next?");
+        stdout().flush()?;
         io::stdin().read_line(&mut buffer)?;
 
         if let Ok(different_index) = buffer.parse() {
@@ -45,6 +53,18 @@ fn main() -> Result<(), Box<dyn Error>> {
         stdout().flush()?;
         let pos = take_image(&mut camera, i)?;
         println!("Done");
+
+        println!("Clearing buffers");
+        serial.clear(ClearBuffer::All)?;
+        serial.clear(ClearBuffer::All)?;
+        serial.clear(ClearBuffer::All)?;
+        serial.clear(ClearBuffer::All)?;
+        serial.clear(ClearBuffer::All)?;
+        serial.clear(ClearBuffer::All)?;
+        serial.clear(ClearBuffer::All)?;
+        println!("Starting next image");
+        serial.write(&[1])?;
+        serial.flush()?;
 
         writeln!(&mut output, "{} = {},{}", i, pos.0, pos.1)?;
 

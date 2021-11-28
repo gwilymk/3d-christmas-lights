@@ -20,7 +20,7 @@ pico_generate_pio_header(ChristmasTreeLights ${CMAKE_CURRENT_LIST_DIR}/ws2812.pi
 
 # Add pico_stdlib library which aggregates commonly used features
 target_link_libraries(ChristmasTreeLights pico_stdlib hardware_pio)
-
+pico_enable_stdio_usb(ChristmasTreeLights true)
 
 # create map/bin/hex/uf2 file in addition to ELF.
 pico_add_extra_outputs(ChristmasTreeLights)
