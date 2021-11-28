@@ -102,7 +102,7 @@ void button_pressed(uint gpio, uint32_t events)
 {
     if ((to_ms_since_boot(get_absolute_time()) - time) > delay_time)
     {
-        current_led++;
+        current_led = (current_led + 1) % NUM_PIXELS;
     }
 }
 
@@ -146,6 +146,10 @@ int main()
 
     if (!gpio_get(BUTTON_PIN))
     {
+        gpio_init(PICO_DEFAULT_LED_PIN);
+        gpio_set_dir(PICO_DEFAULT_LED_PIN, GPIO_OUT);
+        gpio_put(PICO_DEFAULT_LED_PIN, 1);
+
         gpio_set_irq_enabled_with_callback(2, GPIO_IRQ_EDGE_FALL, true, &button_pressed);
         one_at_a_time();
     }
