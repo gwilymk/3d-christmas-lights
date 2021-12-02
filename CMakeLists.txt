@@ -15,7 +15,7 @@ pico_sdk_init()
 
 add_executable(ChristmasTreeLights)
 
-target_sources(ChristmasTreeLights PRIVATE main.c)
+target_sources(ChristmasTreeLights PRIVATE main.c hsv.c)
 pico_generate_pio_header(ChristmasTreeLights ${CMAKE_CURRENT_LIST_DIR}/ws2812.pio)
 
 # Add pico_stdlib library which aggregates commonly used features

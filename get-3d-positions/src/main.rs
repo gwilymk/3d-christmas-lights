@@ -7,6 +7,7 @@ use serialport::ClearBuffer;
 use std::error::Error;
 use std::fs::File;
 use std::io::{self, stdout, Write};
+use std::thread;
 use std::time::Duration;
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -35,22 +36,15 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     camera.open_stream()?;
 
-    let mut buffer = String::new();
-    let mut i = 0;
-
     let mut output = File::create("target/output.dat")?;
 
-    loop {
+    for i in 0..100 {
         print!("Next?");
         stdout().flush()?;
-        io::stdin().read_line(&mut buffer)?;
-
-        if let Ok(different_index) = buffer.parse() {
-            i = different_index;
-        }
 
         print!("Taking for {}... ", i);
         stdout().flush()?;
+        thread::sleep(Duration::from_millis(100));
         let pos = take_image(&mut camera, i)?;
         println!("Done");
 
@@ -63,22 +57,24 @@ fn main() -> Result<(), Box<dyn Error>> {
         serial.clear(ClearBuffer::All)?;
         serial.clear(ClearBuffer::All)?;
         println!("Starting next image");
-        serial.write(&[1])?;
+        serial.write(&[i as u8])?;
         serial.flush()?;
 
         writeln!(&mut output, "{} = {},{}", i, pos.0, pos.1)?;
-
-        i += 1;
     }
+
+    Ok(())
 }
 
 fn take_image(camera: &mut Camera, index: i32) -> Result<(usize, usize), Box<dyn Error>> {
     let frame = camera.frame()?;
 
-    let mut frame: ImageBuffer<Rgb<u8>, Vec<_>> = gaussian_blur_f32(&frame, 10.0);
+    let mut frame: ImageBuffer<Rgb<u8>, Vec<_>> = gaussian_blur_f32(&frame, 3.0);
 
+    // the light is white, so expecting a low standard deviation too
     let mut maximum_brightness = 0;
     let mut best_pos = None;
+    let mut colour_of_best = None;
 
     for (i, row) in frame.rows().enumerate() {
         for (j, pixel) in row.enumerate() {
@@ -87,9 +83,12 @@ fn take_image(camera: &mut Camera, index: i32) -> Result<(usize, usize), Box<dyn
             if brightness > maximum_brightness {
                 maximum_brightness = brightness;
                 best_pos = Some((j, i));
+                colour_of_best = Some(*pixel);
             }
         }
     }
+
+    println!("colour of best = {:?}", colour_of_best);
 
     let best_pos = best_pos.unwrap();
     let best_x = best_pos.0;
